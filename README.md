@@ -10,6 +10,11 @@ narazil jsem na miliony chyb jako že pawn nemuže dva bloky do předu nebo že 
 taky jsem přidal transformaci na posledním řádku aby se mohl pawn transformovat na knight,queen,bishop,rook
 a konec je když umře král tak si můžete vybrat play again hrát znovu nebo exit game over.
 
+vs kod:
+
+
+
+
 
 <!DOCTYPE html>
 <html lang="en">
