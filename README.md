@@ -8,6 +8,7 @@ Každý typ figurky má vlastní funkci, která ověřuje, jestli je daný tah p
 Pokud pěšec dojde na poslední řadu, zobrazí se mi nabídka pro proměnu – můžu si vybrat, jestli ho chci změnit na dámu, věž, střelce nebo jezdce. Tah se dokončí až po tom výběru.
 Na konci každého tahu kontroluju, jestli ještě zůstávají oba králové na šachovnici. Pokud jeden zmizí, hra končí a zobrazí se mi tlačítka – buď si můžu zahrát znovu, nebo hru ukončit.
 
+link:https://youtu.be/lB2HuOETEGs
 
 
 
