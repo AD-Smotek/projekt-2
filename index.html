@@ -1,215 +1,264 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chess with AI</title>
+    <meta charset="UTF-8"> <!-- Nastavení kódování na UTF-8 -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"> <!-- Kompatibilita s Internet Explorerem -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Responzivní zobrazení na mobilu -->
+    <title>Chess with AI</title> <!-- Název stránky -->
+
+    <!-- Tailwind CSS knihovna pro styly -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/3.2.7/tailwind.min.css" rel="stylesheet">
+
     <style>
-        body { background-color: #f0f0f0; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; gap: 20px; }
-        #chessboard { display: grid; grid-template-columns: repeat(8, 60px); grid-template-rows: repeat(8, 60px); }
-        .cell { width: 60px; height: 60px; display: flex; justify-content: center; align-items: center; font-size: 24px; cursor: pointer; }
-        .white { background-color: #eee; }
-        .black { background-color: #555; color: #fff; }
-        .selected { background-color: #a0c4ff !important; }
+        /* Stylování celé stránky */
+        body {
+            background-color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            gap: 20px;
+        }
+
+        /* Šachovnice 8x8 */
+        #chessboard {
+            display: grid;
+            grid-template-columns: repeat(8, 60px);
+            grid-template-rows: repeat(8, 60px);
+        }
+
+        /* Styl políček */
+        .cell {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .white { background-color: #eee; }  /* Světlá políčka */
+        .black { background-color: #555; color: #fff; }  /* Tmavá políčka */
+        .selected { background-color: #a0c4ff !important; }  /* Vybrané políčko */
     </style>
 </head>
 <body>
 
-<div id="chessboard"></div>
-<div id="promotion" style="display: none;">
-    <p>Select a piece for promotion:</p>
-    <button onclick="promotePawn('q')">Queen</button>
-    <button onclick="promotePawn('r')">Rook</button>
-    <button onclick="promotePawn('b')">Bishop</button>
-    <button onclick="promotePawn('n')">Knight</button>
-</div>
-<div id="controls" style="display: none;">
-    <button onclick="restartGame()" class="bg-blue-500 text-white px-4 py-2 rounded">Play Again</button>
-    <button onclick="exitGame()" class="bg-red-500 text-white px-4 py-2 rounded">Exit</button>
-</div>
+    <!-- Šachovnice -->
+    <div id="chessboard"></div>
 
-<script>
-    let board;
-    let selectedCell = null;
-    let gameEnded = false;
-    let promotionPosition = null;
+    <!-- Výběr pro proměnu pěšce -->
+    <div id="promotion" style="display: none;">
+        <p>Select a piece for promotion:</p>
+        <button onclick="promotePawn('q')">Queen</button>
+        <button onclick="promotePawn('r')">Rook</button>
+        <button onclick="promotePawn('b')">Bishop</button>
+        <button onclick="promotePawn('n')">Knight</button>
+    </div>
 
-    const initialBoard = [
-        ["r", "n", "b", "q", "k", "b", "n", "r"],
-        ["p", "p", "p", "p", "p", "p", "p", "p"],
-        ["", "", "", "", "", "", "", ""],
-        ["", "", "", "", "", "", "", ""],
-        ["", "", "", "", "", "", "", ""],
-        ["", "", "", "", "", "", "", ""],
-        ["P", "P", "P", "P", "P", "P", "P", "P"],
-        ["R", "N", "B", "Q", "K", "B", "N", "R"]
-    ];
+    <!-- Tlačítka po konci hry -->
+    <div id="controls" style="display: none;">
+        <button onclick="restartGame()" class="bg-blue-500 text-white px-4 py-2 rounded">Play Again</button>
+        <button onclick="exitGame()" class="bg-red-500 text-white px-4 py-2 rounded">Exit</button>
+    </div>
 
-    const pieceSymbols = {
-        p: "♟", r: "♜", n: "♞", b: "♝", q: "♛", k: "♚",
-        P: "♙", R: "♖", N: "♘", B: "♗", Q: "♕", K: "♔"
-    };
+    <script>
+        let board;
+        let selectedCell = null;
+        let gameEnded = false;
+        let promotionPosition = null;
 
-    function initBoard() {
-        board = JSON.parse(JSON.stringify(initialBoard));
-        gameEnded = false;
-        promotionPosition = null;
-        document.getElementById("promotion").style.display = "none";
-        document.getElementById("controls").style.display = "none";
-        renderBoard(true);
-    }
+        // Počáteční rozložení figur
+        const initialBoard = [
+            ["r", "n", "b", "q", "k", "b", "n", "r"],
+            ["p", "p", "p", "p", "p", "p", "p", "p"],
+            ["", "", "", "", "", "", "", ""],
+            ["", "", "", "", "", "", "", ""],
+            ["", "", "", "", "", "", "", ""],
+            ["", "", "", "", "", "", "", ""],
+            ["P", "P", "P", "P", "P", "P", "P", "P"],
+            ["R", "N", "B", "Q", "K", "B", "N", "R"]
+        ];
 
-    function renderBoard(fullRender = false) {
-        const chessboard = document.getElementById("chessboard");
-        if (fullRender) chessboard.innerHTML = "";
+        // Unicode znaky figur
+        const pieceSymbols = {
+            p: "♟", r: "♜", n: "♞", b: "♝", q: "♛", k: "♚",
+            P: "♙", R: "♖", N: "♘", B: "♗", Q: "♕", K: "♔"
+        };
 
-        for (let row = 0; row < 8; row++) {
-            for (let col = 0; col < 8; col++) {
-                let cell = document.querySelector(`[data-row='${row}'][data-col='${col}']`);
-                if (!cell) {
-                    cell = document.createElement("div");
-                    cell.className = "cell " + ((row + col) % 2 === 0 ? "white" : "black");
-                    cell.dataset.row = row;
-                    cell.dataset.col = col;
-                    cell.addEventListener("click", () => handleCellClick(row, col));
-                    chessboard.appendChild(cell);
+        // Inicializace hry
+        function initBoard() {
+            board = JSON.parse(JSON.stringify(initialBoard));
+            gameEnded = false;
+            promotionPosition = null;
+            document.getElementById("promotion").style.display = "none";
+            document.getElementById("controls").style.display = "none";
+            renderBoard(true);
+        }
+
+        // Vykreslení šachovnice
+        function renderBoard(fullRender = false) {
+            const chessboard = document.getElementById("chessboard");
+            if (fullRender) chessboard.innerHTML = "";
+
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    let cell = document.querySelector(`[data-row='${row}'][data-col='${col}']`);
+                    if (!cell) {
+                        cell = document.createElement("div");
+                        cell.className = "cell " + ((row + col) % 2 === 0 ? "white" : "black");
+                        cell.dataset.row = row;
+                        cell.dataset.col = col;
+                        cell.addEventListener("click", () => handleCellClick(row, col));
+                        chessboard.appendChild(cell);
+                    }
+                    const piece = board[row][col];
+                    cell.textContent = piece ? pieceSymbols[piece] : "";
                 }
-                const piece = board[row][col];
-                cell.textContent = piece ? pieceSymbols[piece] : "";
             }
         }
-    }
 
-    function handleCellClick(row, col) {
-        if (gameEnded || promotionPosition) return;
+        // Zpracování kliknutí na políčko
+        function handleCellClick(row, col) {
+            if (gameEnded || promotionPosition) return;
 
-        if (selectedCell) {
-            if (isValidMove(selectedCell.row, selectedCell.col, row, col)) {
-                movePiece(selectedCell.row, selectedCell.col, row, col);
-                checkPawnPromotion(row, col);
-                checkGameOver();
+            if (selectedCell) {
+                if (isValidMove(selectedCell.row, selectedCell.col, row, col)) {
+                    movePiece(selectedCell.row, selectedCell.col, row, col);
+                    checkPawnPromotion(row, col);
+                    checkGameOver();
+                }
+                selectedCell = null;
+            } else if (board[row][col]) {
+                selectedCell = { row, col };
             }
-            selectedCell = null;
-        } else if (board[row][col]) {
-            selectedCell = { row, col };
+            renderBoard();
         }
-        renderBoard();
-    }
 
-    function movePiece(fromRow, fromCol, toRow, toCol) {
-        board[toRow][toCol] = board[fromRow][fromCol];
-        board[fromRow][fromCol] = "";
-    }
-
-    function isValidMove(fromRow, fromCol, toRow, toCol) {
-        const piece = board[fromRow][fromCol];
-        const target = board[toRow][toCol];
-        const isWhite = piece === piece.toUpperCase();
-        if (target && (target === target.toUpperCase()) === isWhite) return false;
-
-        switch(piece.toLowerCase()) {
-            case 'p': return isValidPawnMove(fromRow, fromCol, toRow, toCol, piece);
-            case 'r': return isValidRookMove(fromRow, fromCol, toRow, toCol);
-            case 'n': return isValidKnightMove(fromRow, fromCol, toRow, toCol);
-            case 'b': return isValidBishopMove(fromRow, fromCol, toRow, toCol);
-            case 'q': return isValidQueenMove(fromRow, fromCol, toRow, toCol);
-            case 'k': return isValidKingMove(fromRow, fromCol, toRow, toCol);
-            default: return false;
+        // Pohyb figurky
+        function movePiece(fromRow, fromCol, toRow, toCol) {
+            board[toRow][toCol] = board[fromRow][fromCol];
+            board[fromRow][fromCol] = "";
         }
-    }
 
-    function isValidPawnMove(fromRow, fromCol, toRow, toCol, piece) {
-        const direction = piece === 'P' ? -1 : 1;
-        const startRow = piece === 'P' ? 6 : 1;
-        // Single move
-        if (fromCol === toCol && board[toRow][toCol] === '' && toRow === fromRow + direction) {
+        // Ověření platnosti tahu podle typu figurky
+        function isValidMove(fromRow, fromCol, toRow, toCol) {
+            const piece = board[fromRow][fromCol];
+            const target = board[toRow][toCol];
+            const isWhite = piece === piece.toUpperCase();
+            if (target && (target === target.toUpperCase()) === isWhite) return false;
+
+            switch(piece.toLowerCase()) {
+                case 'p': return isValidPawnMove(fromRow, fromCol, toRow, toCol, piece);
+                case 'r': return isValidRookMove(fromRow, fromCol, toRow, toCol);
+                case 'n': return isValidKnightMove(fromRow, fromCol, toRow, toCol);
+                case 'b': return isValidBishopMove(fromRow, fromCol, toRow, toCol);
+                case 'q': return isValidQueenMove(fromRow, fromCol, toRow, toCol);
+                case 'k': return isValidKingMove(fromRow, fromCol, toRow, toCol);
+                default: return false;
+            }
+        }
+
+        // Tah pěšcem
+        function isValidPawnMove(fromRow, fromCol, toRow, toCol, piece) {
+            const direction = piece === 'P' ? -1 : 1;
+            const startRow = piece === 'P' ? 6 : 1;
+            if (fromCol === toCol && board[toRow][toCol] === '' && toRow === fromRow + direction) return true;
+            if (fromCol === toCol && board[toRow][toCol] === '' && fromRow === startRow && toRow === fromRow + 2 * direction) {
+                if (board[fromRow + direction][fromCol] === '') return true;
+            }
+            if (Math.abs(toCol - fromCol) === 1 && toRow === fromRow + direction && board[toRow][toCol] !== '') return true;
+            return false;
+        }
+
+        // Tah věží
+        function isValidRookMove(fromRow, fromCol, toRow, toCol) {
+            if (fromRow !== toRow && fromCol !== toCol) return false;
+            if (fromRow === toRow) {
+                for (let c = Math.min(fromCol, toCol) + 1; c < Math.max(fromCol, toCol); c++) {
+                    if (board[fromRow][c]) return false;
+                }
+            } else {
+                for (let r = Math.min(fromRow, toRow) + 1; r < Math.max(fromRow, toRow); r++) {
+                    if (board[r][fromCol]) return false;
+                }
+            }
             return true;
         }
-        // Double move from start row
-        if (fromCol === toCol && board[toRow][toCol] === '' && fromRow === startRow && toRow === fromRow + 2 * direction) {
-            // Check path clear
-            if (board[fromRow + direction][fromCol] === '') return true;
+
+        // Tah jezdcem
+        function isValidKnightMove(fromRow, fromCol, toRow, toCol) {
+            const dr = Math.abs(fromRow - toRow);
+            const dc = Math.abs(fromCol - toCol);
+            return (dr === 2 && dc === 1) || (dr === 1 && dc === 2);
         }
-        // Capture
-        if (Math.abs(toCol - fromCol) === 1 && toRow === fromRow + direction && board[toRow][toCol] !== '') {
+
+        // Tah střelcem
+        function isValidBishopMove(fromRow, fromCol, toRow, toCol) {
+            if (Math.abs(fromRow - toRow) !== Math.abs(fromCol - toCol)) return false;
+            const stepR = toRow > fromRow ? 1 : -1;
+            const stepC = toCol > fromCol ? 1 : -1;
+            let r = fromRow + stepR, c = fromCol + stepC;
+            while (r !== toRow && c !== toCol) {
+                if (board[r][c]) return false;
+                r += stepR; c += stepC;
+            }
             return true;
         }
-        return false;
-    }
 
-    function isValidRookMove(fromRow, fromCol, toRow, toCol) {
-        if (fromRow !== toRow && fromCol !== toCol) return false;
-        if (fromRow === toRow) {
-            for (let c = Math.min(fromCol, toCol) + 1; c < Math.max(fromCol, toCol); c++) {
-                if (board[fromRow][c]) return false;
+        // Tah královnou
+        function isValidQueenMove(fromRow, fromCol, toRow, toCol) {
+            return isValidRookMove(fromRow, fromCol, toRow, toCol) || isValidBishopMove(fromRow, fromCol, toRow, toCol);
+        }
+
+        // Tah králem
+        function isValidKingMove(fromRow, fromCol, toRow, toCol) {
+            return Math.abs(fromRow - toRow) <= 1 && Math.abs(fromCol - toCol) <= 1;
+        }
+
+        // Kontrola konce hry (jestli zbývají králové)
+        function checkGameOver() {
+            const pieces = board.flat();
+            if (!pieces.includes('K') || !pieces.includes('k')) {
+                gameEnded = true;
+                document.getElementById("controls").style.display = "block";
             }
-        } else {
-            for (let r = Math.min(fromRow, toRow) + 1; r < Math.max(fromRow, toRow); r++) {
-                if (board[r][fromCol]) return false;
+        }
+
+        // Kontrola proměny pěšce
+        function checkPawnPromotion(row, col) {
+            const piece = board[row][col];
+            if ((piece === 'P' && row === 0) || (piece === 'p' && row === 7)) {
+                promotionPosition = { row, col };
+                document.getElementById("promotion").style.display = "block";
             }
         }
-        return true;
-    }
 
-    function isValidKnightMove(fromRow, fromCol, toRow, toCol) {
-        const dr = Math.abs(fromRow - toRow);
-        const dc = Math.abs(fromCol - toCol);
-        return (dr === 2 && dc === 1) || (dr === 1 && dc === 2);
-    }
-
-    function isValidBishopMove(fromRow, fromCol, toRow, toCol) {
-        if (Math.abs(fromRow - toRow) !== Math.abs(fromCol - toCol)) return false;
-        // Check path
-        const stepR = toRow > fromRow ? 1 : -1;
-        const stepC = toCol > fromCol ? 1 : -1;
-        let r = fromRow + stepR, c = fromCol + stepC;
-        while (r !== toRow && c !== toCol) {
-            if (board[r][c]) return false;
-            r += stepR; c += stepC;
+        // Provést proměnu pěšce
+        function promotePawn(newPiece) {
+            const { row, col } = promotionPosition;
+            const isWhite = board[row][col] === 'P';
+            board[row][col] = isWhite ? newPiece.toUpperCase() : newPiece;
+            promotionPosition = null;
+            document.getElementById("promotion").style.display = "none";
+            renderBoard();
         }
-        return true;
-    }
 
-    function isValidQueenMove(fromRow, fromCol, toRow, toCol) {
-        return isValidRookMove(fromRow, fromCol, toRow, toCol) || isValidBishopMove(fromRow, fromCol, toRow, toCol);
-    }
-
-    function isValidKingMove(fromRow, fromCol, toRow, toCol) {
-        return Math.abs(fromRow - toRow) <= 1 && Math.abs(fromCol - toCol) <= 1;
-    }
-
-    function checkGameOver() {
-        const pieces = board.flat();
-        if (!pieces.includes('K') || !pieces.includes('k')) {
-            gameEnded = true;
-            document.getElementById("controls").style.display = "block";
+        // Restart hry
+        function restartGame() {
+            initBoard();
         }
-    }
 
-    function checkPawnPromotion(row, col) {
-        const piece = board[row][col];
-        if ((piece === 'P' && row === 0) || (piece === 'p' && row === 7)) {
-            promotionPosition = { row, col };
-            document.getElementById("promotion").style.display = "block";
+        // Ukončení hry
+        function exitGame() {
+            document.body.innerHTML = "<h1>Game Over</h1>";
         }
-    }
 
-    function promotePawn(newPiece) {
-        const { row, col } = promotionPosition;
-        const isWhite = board[row][col] === 'P';
-        board[row][col] = isWhite ? newPiece.toUpperCase() : newPiece;
-        promotionPosition = null;
-        document.getElementById("promotion").style.display = "none";
-        renderBoard();
-    }
-
-    function restartGame() { initBoard(); }
-    function exitGame() { document.body.innerHTML = "<h1>Game Over</h1>"; }
-
-    initBoard();
-</script>
+        // Spuštění hry po načtení stránky
+        initBoard();
+    </script>
 
 </body>
 </html>
